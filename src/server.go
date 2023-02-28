@@ -2,55 +2,91 @@ package src
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
-type Response struct {
+type response struct {
 	Current int `json:"current"`
-	DiceNum int `json:"dice_num"`
+	Dice    int `json:"dice_num"`
 }
 
-func dice(c *gin.Context) {
+var clients []*websocket.Conn
 
-	conn, err := GetWebsocket(c)
+func handleWebSocket(c *gin.Context) {
+	// Upgrade the connection to a websocket connection
+	ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		return
+		log.Fatal("Error upgrading connection to websocket: ", err)
 	}
 
-	defer conn.Close()
+	// Send a welcome message to the client
+	err = ws.WriteMessage(websocket.TextMessage, []byte("Welcome!"))
+	if err != nil {
+		log.Println("Error sending welcome message to client: ", err)
+	}
+
+	// Add the new client to the clients slice
+	clients = append(clients, ws)
+
+	// Start listening for incoming messages from the client
+	go dice(ws)
+}
+
+func dice(ws *websocket.Conn) {
 	for {
-		_, message, err := conn.ReadMessage()
-
-		var formattedMsg = string(message)
-		var incomingJson *Response
-
+		// Read a message from the client
+		_, message, err := ws.ReadMessage()
+		if err != nil {
+			log.Println("Error reading message from client: ", err)
+			removeClient(ws)
+			break
+		}
+		var incomingJson *response
 		decodeErr := json.Unmarshal(message, &incomingJson)
+		// Send the message to all connected clients
 		if decodeErr != nil {
-			log.Print("json decode failed")
-			return
+			log.Println("json decode error")
 		}
-		fmt.Printf("formatted : pos %v dice %v\n", incomingJson.Current, incomingJson.DiceNum)
+		sendToAllClients(incomingJson, ws)
+	}
+}
 
-		fmt.Print(formattedMsg, "\n")
-		responseJson := &Response{
-			Current: incomingJson.Current,
-			DiceNum: incomingJson.DiceNum,
+func sendToAllClients(message *response, ws *websocket.Conn) {
+	for _, client := range clients {
+		if ws != client {
+			err := client.WriteJSON(message)
+
+			if err != nil {
+				log.Println("Error sending message to client: ", err)
+				removeClient(client)
+			}
 		}
 
-		writeErr := conn.WriteJSON(*responseJson)
+	}
+}
 
-		if writeErr != nil {
-			log.Print("write failed: ", err)
-			return
+func removeClient(ws *websocket.Conn) {
+	// Remove the client from the clients slice
+	for i, client := range clients {
+		if client == ws {
+			clients = append(clients[:i], clients[i+1:]...)
+			break
 		}
 	}
 }
 
 func RunApp() {
+	// Configure routes
 	r := gin.Default()
-	r.GET("/dice", dice)
-	r.Run(":8080")
+	r.GET("/dice", handleWebSocket)
+
+	// Start the server
+	log.Println("Starting server...")
+	err := r.Run()
+	if err != nil {
+		log.Fatal("Error starting server: ", err)
+	}
 }
