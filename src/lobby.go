@@ -9,7 +9,6 @@ import (
 var clients []*websocket.Conn
 
 func handleLobby(c *websocket.Conn) {
-	c.WriteJSON(responseSkeleton{Data: "Welcome to lobby"})
 	clients = append(clients, c)
 	fmt.Println("connected to lobby")
 	go handlePlayersInLobby(clients) // Notify all clients of new connection
@@ -29,11 +28,17 @@ func handleLobby(c *websocket.Conn) {
 func handlePlayersInLobby(clients []*websocket.Conn) {
 	var players []responseSkeleton
 	for i := range clients {
-		players = append(players, responseSkeleton{Data: fmt.Sprint("player ", i)})
+		players = append(players, responseSkeleton{Data: fmt.Sprint("player ", i+1)})
+	}
+
+	playerStruct := struct {
+		Players []responseSkeleton `json:"players"`
+	}{
+		Players: players,
 	}
 
 	for _, client := range clients {
-		client.WriteJSON(players)
+		client.WriteJSON(playerStruct)
 	}
 
 }
