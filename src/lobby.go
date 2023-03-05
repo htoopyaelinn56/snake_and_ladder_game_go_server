@@ -14,34 +14,41 @@ func handleLobby(c *websocket.Conn) {
 
 	fmt.Println("connected to lobby")
 	go handlePlayersInLobby(clients) // Notify all clients of new connection
-	host = clients[0]
+	if len(clients) > 0 {
+		host = clients[0]
+	}
 	for {
 		_, _, err := c.ReadMessage()
 		if err != nil {
 			fmt.Println("lobby err", err)
 			removeClient(c)
-			host = clients[0]
+			if len(clients) > 0 {
+				host = clients[0]
+			}
 			go handlePlayersInLobby(clients) // Notify all clients of disconnection
 			break
 		}
-		host = clients[0]
-		go handlePlayersInLobby(clients)
 	}
 }
 
 func handlePlayersInLobby(clients []*websocket.Conn) {
-	var players []responseSkeleton
-	for i := range clients {
-		players = append(players, responseSkeleton{Data: fmt.Sprint("player ", i+1)})
+	var players []playerLobbyResponse
+	for i, client := range clients {
+		players = append(players, playerLobbyResponse{
+			Player: fmt.Sprint("Player ", i+1),
+			Host:   host == client,
+		})
 	}
 
 	for _, client := range clients {
 		client.WriteJSON(struct {
-			Players []responseSkeleton `json:"players"`
-			Host    bool               `json:"host"`
+			Data []playerLobbyResponse `json:"data"`
+			Host bool                  `json:"host"`
+			You  int                   `json:"you"`
 		}{
-			Players: players,
-			Host:    host == client,
+			Data: players,
+			Host: host == client,
+			You:  indexOf(clients, client),
 		})
 	}
 }
