@@ -13,25 +13,27 @@ func handleLobby(c *websocket.Conn) {
 	clients = append(clients, c)
 
 	fmt.Println("connected to lobby")
-	go handlePlayersInLobby(clients) // Notify all clients of new connection
+	go handlePlayersInLobby(clients, false) // Notify all clients of new connection
 	if len(clients) > 0 {
 		host = clients[0]
 	}
 	for {
-		_, _, err := c.ReadMessage()
+		_, message, err := c.ReadMessage()
+		go handlePlayersInLobby(clients, true)
+		fmt.Println(string(message))
 		if err != nil {
 			fmt.Println("lobby err", err)
 			removeClient(c)
 			if len(clients) > 0 {
 				host = clients[0]
 			}
-			go handlePlayersInLobby(clients) // Notify all clients of disconnection
+			go handlePlayersInLobby(clients, false) // Notify all clients of disconnection
 			break
 		}
 	}
 }
 
-func handlePlayersInLobby(clients []*websocket.Conn) {
+func handlePlayersInLobby(clients []*websocket.Conn, startCheck bool) {
 	var players []playerLobbyResponse
 	for i, client := range clients {
 		players = append(players, playerLobbyResponse{
@@ -42,13 +44,21 @@ func handlePlayersInLobby(clients []*websocket.Conn) {
 
 	for _, client := range clients {
 		client.WriteJSON(struct {
-			Data []playerLobbyResponse `json:"data"`
-			Host bool                  `json:"host"`
-			You  int                   `json:"you"`
+			Data  []playerLobbyResponse `json:"data"`
+			Host  bool                  `json:"host"`
+			You   int                   `json:"you"`
+			Start bool                  `json:"start"` //flag to tell the clients to start timer
 		}{
 			Data: players,
 			Host: host == client,
 			You:  indexOf(clients, client),
+			Start: func() bool {
+				if startCheck {
+					return true
+				} else {
+					return false
+				}
+			}(),
 		})
 	}
 }
