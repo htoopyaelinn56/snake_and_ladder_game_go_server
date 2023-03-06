@@ -19,7 +19,7 @@ func handleLobby(c *websocket.Conn) {
 	}
 	for {
 		_, message, err := c.ReadMessage()
-		go handlePlayersInLobby(clients, true)
+		go handlePlayersInLobby(clients, true) // notify start button
 		fmt.Println(string(message))
 		if err != nil {
 			fmt.Println("lobby err", err)
