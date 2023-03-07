@@ -9,25 +9,33 @@ import (
 var clients []*websocket.Conn
 var host *websocket.Conn
 
+func _setHost() {
+	if len(clients) > 0 {
+		host = clients[0]
+	}
+}
+
 func handleLobby(c *websocket.Conn) {
 	clients = append(clients, c)
 
 	fmt.Println("connected to lobby")
 	go handlePlayersInLobby(clients, false) // Notify all clients of new connection
-	if len(clients) > 0 {
-		host = clients[0]
-	}
+
+	_setHost()
 	for {
 		_, message, err := c.ReadMessage()
-		go handlePlayersInLobby(clients, true) // notify start button
+		if string(message) == "start" {
+			go handlePlayersInLobby(clients, true) // notify start button
+
+		}
 		fmt.Println(string(message))
 		if err != nil {
 			fmt.Println("lobby err", err)
 			removeClient(c)
-			if len(clients) > 0 {
-				host = clients[0]
-			}
+			_setHost()
+
 			go handlePlayersInLobby(clients, false) // Notify all clients of disconnection
+
 			break
 		}
 	}
