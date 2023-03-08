@@ -6,17 +6,17 @@ import (
 	"github.com/gofiber/websocket/v2"
 )
 
-func removeClient(ws *websocket.Conn) {
+func removeClient(data *[]*websocket.Conn, ws *websocket.Conn) {
 	// Remove the client from the clients slice
-	for i, client := range clients {
+	for i, client := range *data {
 		if client == ws {
-			clients = append(clients[:i], clients[i+1:]...)
+			*data = append((*data)[:i], (*data)[i+1:]...)
 			break
 		}
 	}
 
 	//close client if there is empty players
-	if len(clients) == 0 {
+	if len((*data)) == 0 {
 		ws.Close()
 	}
 }

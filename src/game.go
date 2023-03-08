@@ -7,12 +7,18 @@ import (
 	"github.com/gofiber/websocket/v2"
 )
 
+var _players []*websocket.Conn = make([]*websocket.Conn, 4, 4)
 var currentTurn int = 0
 var yourTurn int = 0
 var currentPlayerCount = 0
 
-func handleGameWs(c *websocket.Conn) {
+func _selfAssign(position int, c *websocket.Conn) {
+	//assign clients' turn
+	_players[position] = c
 
+}
+
+func handleGameWs(c *websocket.Conn) {
 	for {
 		_, message, err := c.ReadMessage()
 		var inputData *payload
@@ -22,19 +28,25 @@ func handleGameWs(c *websocket.Conn) {
 			fmt.Println("decode error")
 			break
 		}
-
 		if err != nil {
 			fmt.Println("read error:", err)
-			removeClient(c)
+			removeClient(&_players, c)
 			break
 		}
-		fmt.Printf("received: %s\n", message)
-		go _handleDices(inputData.Dice, c)
+
+		if inputData.Dice == -1 {
+			_selfAssign(inputData.AssignTurn, c)
+		} else {
+			fmt.Printf("received: %s\n", message)
+			go _handleDices(inputData.Dice, c)
+		}
+
 	}
 }
 
 func _handleDices(diceNum int, sender *websocket.Conn) {
-	for _, client := range clients {
+
+	for _, client := range _players {
 		if client != sender {
 			err := client.WriteJSON(response{
 				Current: currentTurn,
@@ -46,4 +58,5 @@ func _handleDices(diceNum int, sender *websocket.Conn) {
 			}
 		}
 	}
+
 }

@@ -10,7 +10,8 @@ type response struct {
 	Dice    int `json:"dice_num"`
 }
 type payload struct {
-	Dice int `json:"dice_num"`
+	Dice       int `json:"dice_num"` //dice set to -1 when assign
+	AssignTurn int `json:"my_turn"`
 }
 
 type lobbyResponse struct {
