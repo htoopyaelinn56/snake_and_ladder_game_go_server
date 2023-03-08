@@ -29,11 +29,11 @@ func handleGameWs(c *websocket.Conn) {
 			break
 		}
 		fmt.Printf("received: %s\n", message)
-		go handleDices(inputData.Dice, c)
+		go _handleDices(inputData.Dice, c)
 	}
 }
 
-func handleDices(diceNum int, sender *websocket.Conn) {
+func _handleDices(diceNum int, sender *websocket.Conn) {
 	for _, client := range clients {
 		if client != sender {
 			err := client.WriteJSON(response{
