@@ -54,7 +54,6 @@ func _handlePlayersInLobby(clients []*websocket.Conn) {
 		})
 	}
 
-	_tick = _originalTime
 	fmt.Println("just check", _startCheck)
 	if _startCheck {
 		fmt.Println("it is true")
@@ -72,7 +71,10 @@ func _handlePlayersInLobby(clients []*websocket.Conn) {
 		}
 	} else {
 		for _, client := range clients {
-			client.WriteJSON(_getResponse(players, client, _startCheck, -1))
+			if _tick != 0 {
+				client.WriteJSON(_getResponse(players, client, _startCheck, -1))
+				_tick = _originalTime
+			}
 		}
 
 	}
