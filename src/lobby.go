@@ -9,7 +9,7 @@ import (
 
 var _clients []*websocket.Conn
 var _host *websocket.Conn
-var _originalTime = 10
+var _originalTime = 5
 var _tick = _originalTime
 var _startCheck = false
 
@@ -20,7 +20,7 @@ func _setHost() {
 }
 
 func handleLobby(c *websocket.Conn) {
-
+	totalPlayers = -1
 	_clients = append(_clients, c)
 	fmt.Println("len of client ", len(_clients))
 	fmt.Println("connected to lobby")
@@ -32,6 +32,7 @@ func handleLobby(c *websocket.Conn) {
 		_, message, err := c.ReadMessage()
 		if string(message) == "start" {
 			go _handlePlayersInLobby(_clients) // notify start button
+			totalPlayers = len(_clients)
 			_startCheck = true
 		}
 		fmt.Println(string(message))
@@ -55,12 +56,9 @@ func _handlePlayersInLobby(_clients []*websocket.Conn) {
 		})
 	}
 
-	fmt.Println("just check", _startCheck)
 	if _startCheck {
-		fmt.Println("it is true")
 		for i := 0; i <= 10; i++ {
 			if !_startCheck {
-				fmt.Println("timer should not tick")
 				break
 			}
 			for _, client := range _clients {
@@ -68,7 +66,6 @@ func _handlePlayersInLobby(_clients []*websocket.Conn) {
 			}
 			time.Sleep(time.Second)
 			_tick -= 1
-			fmt.Println("this state ticking", _startCheck)
 		}
 	} else {
 		for _, client := range _clients {

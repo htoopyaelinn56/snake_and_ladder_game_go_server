@@ -6,8 +6,9 @@ type playerLobbyResponse struct {
 }
 
 type response struct {
-	Current int `json:"current_turn"`
-	Dice    int `json:"dice_num"`
+	Current  int  `json:"current_turn"`
+	Dice     int  `json:"dice_num"`
+	CanStart bool `json:"can_start"`
 }
 type payload struct {
 	Dice       int `json:"dice_num"` //dice set to -1 when assign
