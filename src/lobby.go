@@ -9,7 +9,7 @@ import (
 
 var _clients []*websocket.Conn
 var _host *websocket.Conn
-var _originalTime = 5
+var _originalTime = 3
 var _tick = _originalTime
 var _startCheck = false
 
@@ -57,7 +57,7 @@ func _handlePlayersInLobby(_clients []*websocket.Conn) {
 	}
 
 	if _startCheck {
-		for i := 0; i <= 10; i++ {
+		for i := 0; i <= _originalTime; i++ {
 			if !_startCheck {
 				break
 			}

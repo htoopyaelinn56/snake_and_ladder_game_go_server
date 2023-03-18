@@ -8,15 +8,15 @@ import (
 )
 
 var _players []*websocket.Conn = make([]*websocket.Conn, 4)
-var currentTurn = 0
+var currentTurn = -1
 var totalPlayers = -1
 var _canStart = false
 
 func _selfAssign(position int, c *websocket.Conn) {
 	//assign clients' turn
 	_players[position] = c
-	fmt.Print(_players)
-	fmt.Println(totalPlayers)
+	fmt.Println(_players)
+	fmt.Println("len ", totalPlayers)
 
 	if _countNotNil() == totalPlayers {
 		fmt.Println("can start")
@@ -24,7 +24,6 @@ func _selfAssign(position int, c *websocket.Conn) {
 	}
 
 	_handleDices(-1, nil, _canStart)
-
 }
 
 func _countNotNil() int {
@@ -54,11 +53,10 @@ func handleGameWs(c *websocket.Conn) {
 			removeClient(&_players, c)
 			break
 		}
-
+		fmt.Printf("received: %s\n", message)
 		if inputData.Dice == -1 {
 			go _selfAssign(inputData.AssignTurn, c)
 		} else {
-			fmt.Printf("received: %s\n", message)
 			go _handleDices(inputData.Dice, c, _canStart)
 		}
 
@@ -67,8 +65,15 @@ func handleGameWs(c *websocket.Conn) {
 
 func _handleDices(diceNum int, sender *websocket.Conn, canStart bool) {
 
+	if canStart {
+		fmt.Println("send, current turn ", currentTurn)
+		currentTurn += 1
+		if currentTurn >= totalPlayers { //reset turn after round
+			currentTurn = 0
+		}
+	}
 	for _, client := range _players {
-		if client != sender {
+		if client != sender && client != nil {
 			err := client.WriteJSON(response{
 				Current:  currentTurn,
 				Dice:     diceNum,
@@ -80,8 +85,5 @@ func _handleDices(diceNum int, sender *websocket.Conn, canStart bool) {
 			}
 		}
 	}
-	currentTurn += 1
-	if currentTurn >= totalPlayers-1 {
-		currentTurn = 0
-	}
+
 }
